@@ -12,16 +12,18 @@
 #define INPUT_SIZE 510
 #define CUTTING_WORD " \n"
 #define ENDING_WORD "done\n"
+#include <errno.h>
 char *getcwd(char *buf, size_t size);
 
 void  DisplayPrompt();
-void execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength);
+char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength);
 void garbageCollector(char** argv,int size);
 
 
 static int *numOfCmd;
 static int *cmdLength;
 int main() {
+
     numOfCmd = mmap(NULL, sizeof *numOfCmd, PROT_READ | PROT_WRITE,
                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     cmdLength = mmap(NULL, sizeof *cmdLength, PROT_READ | PROT_WRITE,
@@ -38,9 +40,29 @@ int main() {
     while (strcmp(input,ENDING_WORD)!=0)
     {
         if(fgets(input,INPUT_SIZE,stdin)==0)
-            printf("");
+            printf(" ");
             //do nothing...countine regular
 
+	argv=execFunction(input,argv,&sizeOfArray,cmdLength);
+	 if (strcmp("cd",argv[0])==0)
+    {
+        struct passwd *pwd;
+        char* path=argv[1];
+
+        if(path==NULL)
+        {
+            pwd=getpwuid(getuid());
+            path=pwd->pw_dir;
+        }
+        errno=chdir(path);
+        DisplayPrompt();
+        if(errno!=0)
+            printf("error changing dircatory");
+       
+    }
+
+	else
+	{
         id=fork();
         if (id<0)
         {
@@ -49,12 +71,14 @@ int main() {
         }
         if(id==0) {
             (*numOfCmd)++;
-            execFunction(input,argv,&sizeOfArray,cmdLength);
+            
+            execvp(argv[0],argv);
+ 	    garbageCollector(argv,sizeOfArray);
             if(strcmp(input,ENDING_WORD)!=0)
                 exit(1);
         }else {
             wait(&id);
-            {
+            
                 if (strcmp(input, ENDING_WORD) != 0)
                     DisplayPrompt();
                 else {
@@ -77,7 +101,7 @@ void garbageCollector(char** argv,int size)
     free(argv);
     argv=NULL;
 }
-void execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
+char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
 {
     int i=0,counter=0;
     char inputCopy[INPUT_SIZE];
@@ -118,8 +142,8 @@ void execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
     }
     argv[counter]=NULL;
     (*sizeOfArray)=counter;
-    execvp(argv[0],argv);
-    garbageCollector(argv,*sizeOfArray);
+return argv;
+   
 }
 
 void DisplayPrompt()
