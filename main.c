@@ -1,3 +1,8 @@
+/**************************************************************************************************************
+In this exercise, we will execute a simple C language shell under the Linux operating system,
+ the shell will show PROMPT to the user, read the commands and send them to the operating system for execution.
+ **************************************************************************************************************/
+
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -7,82 +12,85 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <sys/mman.h>
-
-
-#define INPUT_SIZE 510
-#define CUTTING_WORD " \n"
-#define ENDING_WORD "done\n"
 #include <errno.h>
-char *getcwd(char *buf, size_t size);
 
-void  DisplayPrompt();
-char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength);
-void garbageCollector(char** argv,int size);
+#define INPUT_SIZE 510 //The length of the maximum string for the user
+#define CUTTING_WORD " \n"//For dividing a string into single words (using in strtok)
+#define ENDING_WORD "done"//Program end word
+#define RESET 0
 
+ /*****************************Private Function declaration******************************/
+char *getcwd(char *buf, size_t size);//show the path Of the current folder
+void  DisplayPrompt();//Display Prompt : user@currect dir>
+char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength);  //Preparation of a receiver input as an expense
+void garbageCollector(char** argv,int size); //Memory Release
 
+ /****************************/
 static int *numOfCmd;
 static int *cmdLength;
+/****************************/
 int main() {
-
+    /*****************************************************************/
     numOfCmd = mmap(NULL, sizeof *numOfCmd, PROT_READ | PROT_WRITE,
-                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+                    MAP_SHARED | MAP_ANONYMOUS, -1, RESET);
     cmdLength = mmap(NULL, sizeof *cmdLength, PROT_READ | PROT_WRITE,
-                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    (*numOfCmd)=0;
-    (*cmdLength)=0;
-    int sizeOfArray=0;
+                     MAP_SHARED | MAP_ANONYMOUS, -1, RESET);
+    /******************************************************************/
+    (*numOfCmd)=RESET;
+    (*cmdLength)=RESET;
+    int sizeOfArray=RESET;
 
     char input[INPUT_SIZE]="";//A string array containing the input.
     DisplayPrompt();
     pid_t id; // pid_t use for process identifer
     char **argv;//A string array will containing the program name and command arguments
 
-    while (strcmp(input,ENDING_WORD)!=0)
+    while (strcmp(input,ENDING_WORD)!=RESET)
     {
-        if(fgets(input,INPUT_SIZE,stdin)==0)
+        if(fgets(input,INPUT_SIZE,stdin)==RESET)
             printf(" ");
-            //do nothing...countine regular
+        //do nothing...countine regular
 
-	argv=execFunction(input,argv,&sizeOfArray,cmdLength);
-	 if (strcmp("cd",argv[0])==0)
-    {
-        struct passwd *pwd;
-        char* path=argv[1];
-
-        if(path==NULL)
+        argv=execFunction(input,argv,&sizeOfArray,cmdLength);
+        if (strcmp("cd",argv[RESET])==RESET)
         {
-            pwd=getpwuid(getuid());
-            path=pwd->pw_dir;
-        }
-        errno=chdir(path);
-        DisplayPrompt();
-        if(errno!=0)
-            printf("error changing dircatory");
-       
-    }
+            struct passwd *pwd;
+            char* path=argv[1];
 
-	else
-	{
-        id=fork();
-        if (id<0)
-        {
-            printf("fork faild");
-            exit(0);
+            if(path==NULL)
+            {
+                pwd=getpwuid(getuid());
+                path=pwd->pw_dir;
+            }
+            errno=chdir(path);
+            DisplayPrompt();
+            if(errno!=RESET)
+                printf("error changing dircatory");
+
         }
-        if(id==0) {
-            (*numOfCmd)++;
-            
-            execvp(argv[0],argv);
- 	    garbageCollector(argv,sizeOfArray);
-            if(strcmp(input,ENDING_WORD)!=0)
-                exit(1);
-        }else {
-            wait(&id);
-            
-                if (strcmp(input, ENDING_WORD) != 0)
+
+        else
+        {
+            id=fork();
+            if (id<RESET)
+            {
+                printf("fork faild");
+                exit(RESET);
+            }
+            else if(id==RESET) {
+                (*numOfCmd)++;
+
+                execvp(argv[RESET],argv);
+                garbageCollector(argv,sizeOfArray);
+                if(strcmp(input,ENDING_WORD)!=RESET)
+                    exit(1);
+            }else {
+                wait(&id);
+                if (strcmp(input,ENDING_WORD) != RESET)
+                {
                     DisplayPrompt();
-                else {
-                    printf("Num of cmd: %d\n", *numOfCmd-1);
+                }                else {
+                    printf("Num of cmd: %d\n", *numOfCmd);
                     printf("cmd length: %d\n", *cmdLength-4);
                     printf("Bye !\n");
                 }
@@ -90,12 +98,12 @@ int main() {
 
         }
     }
-    return 0;
+    return RESET;
 }
 void garbageCollector(char** argv,int size)
 {
-    int i=0;
-    for (i = 0; i < size; ++i) {
+    int i=RESET;
+    for (i = RESET; i < size; ++i) {
         free(argv[i]);
     }
     free(argv);
@@ -103,7 +111,7 @@ void garbageCollector(char** argv,int size)
 }
 char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
 {
-    int i=0,counter=0;
+    int i=RESET,counter=RESET;
     char inputCopy[INPUT_SIZE];
     strcpy(inputCopy,input);
 
@@ -117,13 +125,13 @@ char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
     if(argv==NULL)
     {
         printf("error allocated");
-        exit(0);
+        exit(RESET);
     }
 
     char* ptrCopy= strtok(inputCopy,CUTTING_WORD);
     while(ptrCopy!=NULL)
     {
-        if (i==0)
+        if (i==RESET)
             (*cmdLength)+=strlen(ptrCopy);
         argv[i]=(char*)malloc((sizeof(char)+1)*strlen(ptrCopy));
         if(argv[i]==NULL)
@@ -133,7 +141,7 @@ char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
                 free(argv[j]);
             }
             free(argv);
-            exit(0);
+            exit(RESET);
         }
         strcpy(argv[i],ptrCopy);
         argv[i][strlen(ptrCopy)]='\0';
@@ -142,8 +150,8 @@ char** execFunction(char *input,char **argv,int *sizeOfArray,int *cmdLength)
     }
     argv[counter]=NULL;
     (*sizeOfArray)=counter;
-return argv;
-   
+    return argv;
+
 }
 
 void DisplayPrompt()
@@ -171,4 +179,5 @@ void DisplayPrompt()
     else {
         printf("%s@%s>\n", p->pw_name, ptr);
     }
+    free(buf);
 }
