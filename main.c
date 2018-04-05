@@ -52,6 +52,7 @@ int main() {
         //do nothing...countine regular
 
         argv=execFunction(input,argv,&sizeOfArray,cmdLength);
+
         if (strcmp("cd",argv[RESET])==RESET)
         {
             struct passwd *pwd;
@@ -62,6 +63,8 @@ int main() {
                 pwd=getpwuid(getuid());
                 path=pwd->pw_dir;
             }
+            if(path[0]=='/')
+                (path)=++(path);
             errno=chdir(path);
             DisplayPrompt();
             if(errno!=RESET)
